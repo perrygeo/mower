@@ -1,0 +1,34 @@
+#!/bin/bash
+GISDBASE=.grass
+MAPSET=PERMANENT
+DATA=$1
+DSNAME=$2
+LOCATION=`basename $DATA`
+OUTDIR=`pwd`
+EXT=img
+FORMAT=HFA
+
+
+rm -rf $GISDBASE  # NOT THREAD SAFE!
+mkdir -p $GISDBASE
+
+# some fun job to illustrate the idea:
+echo "
+# export GRASS_MESSAGE_FORMAT=plain
+r.external input=$DATA output=$DSNAME
+r.external.out directory=$OUTDIR extension=$EXT format=$FORMAT" > $GISDBASE/external.sh
+chmod u+x $GISDBASE/external.sh
+ 
+# define job file as environmental variable
+export GRASS_BATCH_JOB=$GISDBASE/external.sh
+
+grass71 -text -c $DATA $GISDBASE/$LOCATION
+
+unset GRASS_BATCH_JOB
+
+echo 
+echo "-----------------------------------------------"
+echo "Now run:"
+echo "    grass71 -text $GISDBASE/$LOCATION/PERMANENT"
+echo "-----------------------------------------------"
+echo
