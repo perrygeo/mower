@@ -17,17 +17,17 @@ The old workflow goes like this:
 
 All of this required careful management of environment variables, a directory structure
 to satisfy the GRASS location/mapset requirements and use of shell/system calls
-even when using python
+even when using Python.
 
-GRASS 7 and the new pygrass module solves the system call issue by providing a python 
+GRASS 7 and the new [pygrass](http://grasswiki.osgeo.org/wiki/Python/pygrass) module solves the system call issue by providing a python 
 API to wrap the underlying C libs directly. But you still need to 
-perform extensive work to make sure you've set up a location/mapset and that your
+[perform extensive work](http://grasswiki.osgeo.org/wiki/Working_with_GRASS_without_starting_it_explicitly#Python:_GRASS_GIS_7_without_existing_location_using_metadata_only) to make sure you've set up a location/mapset and that your
 system is set up to work in that environment.
 
 Why can't it be this easy?
-* Start a GRASS session (The mapset and location are handled transparently)
+* Start a GRASS session with a dataset (The mapset and location are handled transparently)
 * Do some GRASS analysis
-* Close the GRASS session (The temporary files are deleted and environment cleaned up)
+* That's it ... the GRASS session is automatically cleaned up
 
 Well now it is. Treat your grass session as a python context manager and use `pygrass`
 however you want without dealing with location/mapset cruft:
@@ -48,6 +48,7 @@ however you want without dealing with location/mapset cruft:
 	    # Export from GRASS to GDAL
 	    raster.out_gdal("demft", format="GTiff", output="/tmp/demft.tif", overwrite=True)
 
+For contrast, see the [example wiki code](http://grasswiki.osgeo.org/wiki/Working_with_GRASS_without_starting_it_explicitly#Python:_GRASS_GIS_7_without_existing_location_using_metadata_only) for working with GRASS without explicitly starting it.
 
 
 ### Bash it
