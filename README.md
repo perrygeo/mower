@@ -1,8 +1,5 @@
-```
-This is RDD (Readme-Driven Developement)
-Write the README first, code comes later (perhaps much later)
-IOW, just sketching ideas out here, nothing to see, move on...
-```
+
+A python toolkit to tame the wild GRASS
 
 ### GISDBASE, LOCATIONS, MAPSETS, OH MY
 Even to GIS analysts who love code, GRASS presents a significant conceptual barrier in it's system of 
@@ -18,34 +15,47 @@ The old workflow goes like this:
 * export the results back to files or databases or their intended format
 * clean up by removing the datasets or the LOCATION entirely
 
-Why shouldn't it be this easy?
-* run the analysis directly on your original data, with a location/mapset created on the fly and results output directly to the intended format
+All of this required careful management of environment variables, a directory structure
+to satisfy the GRASS location/mapset requirements and use of shell/system calls
+even when using python
 
-GRASS, in recent years has provided some great tools r.external, r.external.out, etc
-that allow it to work with linked datasets, avoiding the data copying problem. But you 
-still have to jump throught the hoops of creating mapsets, linking data, cleaning up, etc
+GRASS 7 and the new pygrass module solves the system call issue by providing a python 
+API to wrap the underlying C libs directly. But you still need to 
+perform extensive work to make sure you've set up a location/mapset and that your
+system is set up to work in that environment.
 
-### Use case #1: process a file and get out
+Why can't it be this easy?
+* Start a GRASS session (The mapset and location are handled transparently)
+* Do some GRASS analysis
+* Close the GRASS session (The temporary files are deleted and environment cleaned up)
 
-That's where `grasshopper` comes in. 
+Well now it is. Treat your grass session as a python context manager and use `pygrass`
+however you want without dealing with location/mapset cruft:
 
-    grasshop r.slope.aspect elevation=dem.tif slope=slope.tif
+	from mower import GrassSession
 
-What happened under the hood? We created a new GISBASE at `./.grass`, created a new location based on the spatial reference of the 
-input `dem.tif`, created a PERMANENT mapset, linked a data source to `dem.tif`, set the output to be GeoTiff external, 
-ran the r.slope.aspect command and deleted the temporary gisdbase.
+	DEM = "/tmp/dem_meters.img"
 
-### Use case #2: create a mapset and jump in
+	with GrassSession(DEM) as gs:
+	    from grass.pygrass.modules.shortcuts import raster
 
-Abstractions are great but they tend to leak. You may want to dive into your new mapset and tinker before cleaning it up. 
-Or maybe you just want to fire up a new mapset based on existing data without so much overhead.
-In that case, you can keep the old mapset around and go directly into the grass prompt
+	    # Import/Link to External GDAL data
+	    raster.external(input=DEM, output="dem")
 
-    grasshop -c dem.tif   # creates .grass/dem_tif/PERMANENT by default
-    grasshop -c dem.tif ~/grassdata/mylocation/newmapset
+	    # Perform calculations
+	    raster.mapcalc(expression="demft=dem*3.28084")
+
+	    # Export from GRASS to GDAL
+	    raster.out_gdal("demft", format="GTiff", output="/tmp/demft.tif", overwrite=True)
 
 
-### Options
 
---bin   path or name of grass binary (default: `grass`)
-        alternatively, set "GRASSHOPPER_BIN=/path/to/grass"
+### Bash it
+
+If you want to work in the shell instead of python, try this built-in trick
+
+    grass71 -c dem.tif ~/grassdata/mylocation
+
+Which will create a new `PERMANENT` mapset in the `mylocation` location within the
+`grassdata` gisdbase and dump you directly into that session. Try with -e if you want to create
+but immediately exit.
