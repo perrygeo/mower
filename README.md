@@ -1,5 +1,11 @@
+A python toolkit to tame the wild GRASS. 
 
-A python toolkit to tame the wild GRASS
+```
+pip install git+https://github.com/perrygeo/mower.git@master#egg=mower
+```
+
+The goal is to provide a dead-simple context manager to handle GRASS Session state, allowing you to
+run GRASS 7 commands via pygrass without having to deal with ...
 
 ### GISDBASE, LOCATIONS, MAPSETS, OH MY
 Even to GIS analysts who love code, GRASS presents a significant conceptual barrier in it's system of 
