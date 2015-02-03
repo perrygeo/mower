@@ -21,7 +21,16 @@ or
 """
 
 class GrassSession():
-    def __init__(self, src, grass='/usr/local/bin/grass71'):
+    def __init__(self, src=None, grassbin='/usr/local/bin/grass71', 
+                 persist=True, dir=None):
+
+        # If dir is specified, load existing location or mapset and
+        # assume persist=True
+        self.persist = persist
+
+        # Else if src is not none, create new location 
+
+        # if src
         if type(src) == int:
             # Assume epsg code
             self.location_seed = "EPSG:{}".format(src)
@@ -29,9 +38,10 @@ class GrassSession():
             # Assume georeferenced vector or raster
             self.location_seed = src
 
-        self.grass = grass
+        self.grassbin = grassbin
+        # TODO assert grassbin is executable and supports what we need
 
-        startcmd = "{} --config path".format(grass) 
+        startcmd = "{} --config path".format(grassbin) 
 
         # Adapted from 
         # http://grasswiki.osgeo.org/wiki/Working_with_GRASS_without_starting_it_explicitly#Python:_GRASS_GIS_7_without_existing_location_using_metadata_only
@@ -48,7 +58,7 @@ class GrassSession():
             else:
                 self.gisbase = out.strip('\n')
 
-        self.gisdb = os.path.join(tempfile.gettempdir(), 'locustdb')
+        self.gisdb = os.path.join(tempfile.gettempdir(), 'mowerdb')
         self.location = "loc_{}".format(str(time.time()).replace(".","_"))
         self.mapset = "PERMANENT"
 
@@ -66,6 +76,7 @@ class GrassSession():
     def gsetup(self):
         path = os.path.join(self.gisbase, 'etc', 'python')
         sys.path.append(path)
+        os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
         import grass.script.setup as gsetup
         gsetup.init(self.gisbase, self.gisdb, self.location, self.mapset)
@@ -79,11 +90,10 @@ class GrassSession():
             os.mkdir(self.gisdb)
 
         createcmd = "{0} -c {1} -e {2}".format(
-            self.grass,
+            self.grassbin,
             self.location_seed, 
             self.location_path) 
 
-        print createcmd
         p = subprocess.Popen(createcmd, shell=True, 
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
@@ -95,7 +105,7 @@ class GrassSession():
         return os.path.join(self.gisdb, self.location)
 
     def cleanup(self):
-        if os.path.exists(self.location_path):
+        if os.path.exists(self.location_path) and not self.persist:
             shutil.rmtree(self.location_path)
         if 'GISRC' in os.environ:
             del os.environ['GISRC']
